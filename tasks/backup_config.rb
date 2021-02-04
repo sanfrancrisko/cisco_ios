@@ -12,11 +12,12 @@ end
 
 begin
   rtn = task.transport.run_command_enable_mode('show running-config')
-  result[:status]  = 'success'
   File.open(task.params['backup_location'], 'w') do |f|
     f.puts rtn
   end
-  result[:results] = "show running-config successfully output to #{task.params['backup_location']}"
+  result = {
+    backup_location: task.params['backup_location']
+  }
 rescue StandardError => e
   result[:_error] = {
     msg: e.message,

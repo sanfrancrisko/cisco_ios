@@ -117,6 +117,14 @@ module Puppet::Transport
     end
 
     def send_command(connection_to_use, options, debug = false)
+
+      if options.class == String
+        File.open('/tmp/debug.log', 'a+') do |f|
+          f.write(options)
+        end
+      end
+
+      # require 'pry-remote'; binding.pry_remote if options.class == String && (options.start_with? 'interface')
       if options.is_a?(Hash)
         options['Timeout'] = @command_timeout unless options.key?('Timeout')
       elsif options.is_a?(String)
@@ -251,6 +259,14 @@ module Puppet::Transport
         end
       end
       send_command(connection, command, true)
+    end
+
+    def restore_config_conf_t_mode(conf)
+      re_conf_t = Regexp.new(%r{#{commands['default']['config_prompt']}})
+      run_command_enable_mode({ 'String' => 'conf t', 'Match' => re_conf_t })
+      conf.split("\n").each do |c|
+        send_command(connection, "#{c}\n")
+      end
     end
 
     def run_command_conf_t_mode(command)

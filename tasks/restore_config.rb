@@ -23,7 +23,8 @@ def config_to_restore(raw_config_output)
     start_line = (line + 1) if (header_match_count == 3) && (rco.start_with? 'version')
     end_line = line if rco.start_with? 'end'
     break if start_line.positive? && end_line.positive?
-    # If we haven't found the headers by line 20, get out of Dodge
+    # If we haven't found the headers by line 20, let's exit as this doesn't seem to be a valid Cisco
+    # backup config retrieved using 'show running-config'
     raise 'Could not detect expected headers from Cisco backup' if line >= 20 && header_match_count < 3
     line += 1
   end
@@ -33,15 +34,12 @@ def config_to_restore(raw_config_output)
 end
 
 begin
-  conf = config_to_restore(File.readlines(task.params['backup_location']))
-
-  conf.each do |l|
-    task.transport.run_command_conf_t_mode(l)
-  end
-
+  # TODO: Grab 'Last configuration change' line and timestamp
+  config_to_restore = config_to_restore(File.readlines(task.params['backup_location']))
+  task.transport.restore_config_conf_t_mode(config_to_restore)
 
   result = {
-    output: 'moo'
+    last_config_change: ''
   }
 rescue StandardError => e
   result[:_error] = {
